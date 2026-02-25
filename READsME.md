@@ -1,3 +1,17 @@
+# Movie Genre Classification 🎬
+
+Predicting movie genres using NLP and Machine Learning.
+
+## 📊 Project Preview
+**[View the Full Analysis & Visualization Report Here](./task1.ipynb)**
+
+### Quick Insights:
+* **Algorithm:** Linear Support Vector Classification (`LinearSVC`)
+* **Feature Engineering:** TF-IDF Vectorization
+* **Accuracy:** [Insert your accuracy % here, e.g., 52%]
+
+### Data Distribution:
+(Once you upload the notebook, the graph will be visible inside the link above.)
 {
  "cells": [
   {
