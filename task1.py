@@ -1,64 +1,49 @@
-import pandas as pd 
+import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.feature_extraction.text import tfidfvectorizer
-from sklearn.preprocessing import labelencoder
-from sklearn.svm import linearsvc
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import LabelEncoder
+from sklearn.svm import LinearSVC
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
+import warnings
 
-train_data = pd.read_csv("train_data.txt", sep=':::', names=['id', 'title', 'genre', 'description'], engine='python')
-test_data = pd.read_csv("test_data.txt", sep=':::', names=['id', 'title', 'genre', 'description'], engine='python')
-test_sol_data = pd.read_csv("test_data_solution.txt", sep=':::', names=['id', 'title', 'genre', 'description'], engine='python')
+# Suppress warnings for a clean output
+warnings.filterwarnings('ignore')
 
-print(train_data.head())
-print(train_data.shape)
+# --- 1. Load Dataset ---
+# Ensure these .txt files are in your Desktop/CODSOFT folder
+try:
+    train_data = pd.read_csv("train_data.txt", sep=':::', names=['id', 'title', 'genre', 'description'], engine='python')
+    test_data = pd.read_csv("test_data.txt", sep=':::', names=['id', 'title', 'genre', 'description'], engine='python')
+    test_sol_data = pd.read_csv("test_data_solution.txt", sep=':::', names=['id', 'title', 'genre', 'description'], engine='python')
+    print("Data loaded successfully!")
+except FileNotFoundError:
+    print("Error: Dataset files not found in the current directory.")
 
-plt.figure(figsize=(10,10))
-sns.countplot(data=train_data, y='genre', order=train_data['genre'].value_counts().index, palette='viridis')
-plt.show()
+# --- 2. Data Preprocessing ---
+train_data['description'] = train_data['description'].fillna("")
+test_data['description'] = test_data['description'].fillna("")
 
+# --- 3. Feature Extraction (Corrected Capitalization) ---
+t_v = TfidfVectorizer(stop_words='english', max_features=50000)
+X_train = t_v.fit_transform(train_data['description'])
+X_test = t_v.transform(test_data['description'])
 
+# --- 4. Label Encoding (Corrected Capitalization) ---
+label_encoder = LabelEncoder()
+y_train = label_encoder.fit_transform(train_data['genre'])
+y_test = label_encoder.transform(test_sol_data['genre'])
 
-train_data['description'] = train_data['description'].fillna("unknown")
-test_sol_data['description'] = test_sol_data['description'].fillna("unknown")
+# --- 5. Model Training (Corrected Capitalization) ---
+# Splitting for validation
+X_train_sub, X_val, y_train_sub, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
 
-t_v = tfidfvectorizer(stop_words='english', max_features=10000)
+clf = LinearSVC(dual=False)
+clf.fit(X_train_sub, y_train_sub)
 
-x_train = t_v.fit_transform(train_data['description'])
-x_test = t_v.transform(test_sol_data['description'])
-
-le = labelencoder()
-y_train = le.fit_transform(train_data['genre'])
-y_test = le.transform(test_sol_data['genre'])
-
-
-
-model = linearsvc()
-model.fit(x_train, y_train)
-
-y_pred = model.predict(x_test)
-
-print("accuracy of the model:")
-print(accuracy_score(y_test, y_pred))
-
-print("full report:")
-print(classification_report(y_test, y_pred, target_names=le.classes_))
-
-def predict_genre(text):
-    text_transformed = t_v.transform([text])
-    prediction = model.predict(text_transformed)
-    return le.inverse_transform(prediction)[0]
-
-s1 = "a movie where police cashes the criminal and shoot him"
-print("test 1 result:")
-print(predict_genre(s1))
-
-s2 = "a movie where person cashes a girl too get marry with him but girl refuses him."
-print("test 2 result:")
-print(predict_genre(s2))
-
-s3 = "space travelers find a new planet with aliens and lasers"
-print("test 3 result:")
-print(predict_genre(s3))
+# --- 6. Results ---
+y_pred = clf.predict(X_test)
+print(f"Test Accuracy: {accuracy_score(y_test, y_pred)}")
+print("\nClassification Report:\n", classification_report(y_test, y_pred, target_names=label_encoder.classes_))
